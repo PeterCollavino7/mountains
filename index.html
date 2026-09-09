@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mountain Trails — Peter Collavino</title>
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="page-header">
+    <h1>Mountain Trails</h1>
+    <p class="page-intro">
+      Every peak, lake and rifugio I've reached since 2022 &mdash; mostly the Julian and
+      Carnic Alps, an hour from where I grew up.
+    </p>
+    <p class="last-outing" id="last-outing"></p>
+  </header>
+
+  <div class="stats-bar" id="stats-bar"></div>
+
+  <div class="view-toggle" id="view-toggle">
+    <button class="view-btn active" data-view="map" type="button">Map</button>
+    <button class="view-btn" data-view="list" type="button">List</button>
+  </div>
+
+  <div class="filters-bar">
+    <input type="text" id="search-input" placeholder="Search…" class="search-input" />
+    <div class="filter-chips" id="type-chips"></div>
+    <details class="range-dropdown">
+      <summary class="chip">Ranges</summary>
+      <div class="range-list" id="range-chips"></div>
+    </details>
+  </div>
+
+  <div class="layout">
+    <div class="content-pane">
+      <div class="map-wrap" id="map-wrap">
+        <div id="map"></div>
+        <button type="button" class="timeline-toggle" id="timeline-toggle" aria-label="Show journey timeline" aria-pressed="false">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          History
+        </button>
+        <div class="timeline-bar" id="timeline-bar">
+          <button type="button" class="timeline-play" id="timeline-play" aria-label="Replay journey">&#9654;</button>
+          <div class="timeline-track">
+            <input type="range" id="timeline-slider" class="timeline-slider" min="0" max="0" value="0" step="1" aria-label="Journey timeline">
+            <div class="timeline-ticks" id="timeline-ticks"></div>
+          </div>
+          <span class="timeline-label" id="timeline-label"></span>
+        </div>
+      </div>
+
+      <div class="list-view" id="list-view" hidden>
+        <div class="list-toolbar">
+          <span class="filter-label">Sort by</span>
+          <div class="sort-toggle" id="sort-toggle">
+            <button class="chip active" data-sort="elevation">Elevation</button>
+            <button class="chip" data-sort="date">Date</button>
+          </div>
+        </div>
+        <table class="peak-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Range</th>
+              <th>Elevation</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="peak-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <section class="charts-section">
+    <h2>Trends</h2>
+    <p>A closer look at the numbers behind the map</p>
+    <div class="charts-grid">
+      <div class="chart-card" style="--chart-color: #5b8cff;">
+        <h3 class="chart-title">
+          <span class="chart-title-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-5 4 4 7-8" /><path d="M15 8h5v5" /></svg></span>
+          Hikes per year
+        </h3>
+        <p class="chart-caption" id="chart-year-caption"></p>
+        <svg class="chart-svg" id="chart-year" role="img" aria-label="Hikes per year"></svg>
+      </div>
+      <div class="chart-card" style="--chart-color: #b8703f;">
+        <h3 class="chart-title">
+          <span class="chart-title-icon"><svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 3 L21 20 L3 20 Z" fill="currentColor" /></svg></span>
+          Peak elevation spread
+        </h3>
+        <p class="chart-caption" id="chart-elevation-caption"></p>
+        <svg class="chart-svg" id="chart-elevation" role="img" aria-label="Distribution of peak elevations in meters"></svg>
+      </div>
+      <div class="chart-card" style="--chart-color: #2dd4bf;">
+        <h3 class="chart-title">
+          <span class="chart-title-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z" /><circle cx="12" cy="10" r="2.3" /></svg></span>
+          Most explored ranges
+        </h3>
+        <p class="chart-caption" id="chart-range-caption"></p>
+        <svg class="chart-svg" id="chart-range" role="img" aria-label="Locations by mountain range"></svg>
+      </div>
+    </div>
+  </section>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

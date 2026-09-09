@@ -1,0 +1,829 @@
+:root {
+  --bg: #0f1115;
+  --bg-alt: #161a21;
+  --bg-card: #1b1f27;
+  --text: #eaecef;
+  --text-muted: #9aa0aa;
+  --border: #2a2f3a;
+  --accent: #5b8cff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.page-header {
+  padding: 0.85rem 1.5rem 0.6rem;
+  text-align: center;
+  position: relative;
+}
+
+.back-link {
+  display: inline-block;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.8rem;
+  margin-bottom: 0.4rem;
+  transition: color 0.2s ease;
+}
+
+.back-link:hover {
+  color: var(--accent);
+}
+
+.page-header h1 {
+  margin: 0 0 0.2rem;
+  font-size: 1.6rem;
+}
+
+.page-header p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* One line on a normal screen, and capped so it stays short if the copy grows:
+   this header sits directly above the map, and every line here pushes the map
+   below the fold. The hiking story proper lives in the Projects card instead. */
+.page-header .page-intro {
+  max-width: 62ch;
+  margin: 0.3rem auto 0;
+}
+
+.page-header .last-outing {
+  margin-top: 0.45rem;
+}
+
+.last-outing:empty {
+  display: none;
+}
+
+.last-outing strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Stats bar — a light inline row of numbers, not a boxed panel competing
+   with the title and view toggle for attention. */
+.stats-bar {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: fit-content;
+  max-width: calc(100% - 3rem);
+  margin: 0 auto 0.85rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  padding: 0.55rem 1.1rem;
+  border-right: 1px solid var(--border);
+}
+
+.stat:last-child {
+  border-right: none;
+}
+
+.stat-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.1;
+}
+
+.stat-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+/* View toggle */
+.view-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.view-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 0.4rem 1.2rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.view-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0f1115;
+}
+
+/* Filters bar — a light inline row (hairline top/bottom, no boxed
+   background) like the stats bar above it, instead of a persistent
+   280px sidebar column that ate horizontal space next to the map/list. */
+.filters-bar {
+  position: relative;
+  z-index: 2000;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1.2rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Layout — fills whatever vertical space is left below the header/stats/toggle,
+   instead of a fixed vh that gets pushed below the fold on shorter viewports. */
+.layout {
+  display: flex;
+  flex: 1;
+  min-height: 420px;
+}
+
+/* content-pane fills .layout via flex-grow (not height:100%) on purpose —
+   a percentage height chained through several nested flex containers with
+   no explicit `height` (only flex-grow) can resolve to 0 in real browsers,
+   even though the box visibly has room. flex-grow doesn't have that
+   ambiguity, so every level below uses it instead of a % height. */
+.content-pane {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.map-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  background: var(--bg);
+}
+
+.list-view {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+  background: var(--bg);
+}
+
+.list-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 44px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 1.2rem;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+}
+
+.list-toolbar .filter-label {
+  margin: 0;
+}
+
+#map {
+  height: 100%;
+  width: 100%;
+  background: var(--bg);
+}
+
+/* Recolor the (light) OpenStreetMap tiles to match the dark theme,
+   desaturated so it reads as an extension of the app's palette rather
+   than a patchwork of inverted hues. Filter is on each tile image, not
+   the tile pane itself — the pane is what Leaflet CSS-transforms during
+   zoom, and filtering a transformed element there renders it black
+   mid-animation (a known Leaflet + CSS filter interaction). Filtering the
+   (untransformed) images instead keeps the zoom animation smooth. */
+#map .leaflet-tile-pane img.leaflet-tile {
+  filter: invert(1) hue-rotate(200deg) brightness(0.92) contrast(0.85) saturate(0.45);
+}
+
+/* Soft vignette to ease the transition from the flat UI chrome into the
+   textured map, instead of a hard color cut at the top edge. */
+.map-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  box-shadow: inset 0 28px 24px -22px rgba(0, 0, 0, 0.75);
+}
+
+/* Timeline toggle — reveals the history scrubber on demand instead of
+   permanently occupying the map on load. */
+.timeline-toggle {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  background: rgba(22, 26, 33, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.timeline-toggle:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.timeline-toggle.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0f1115;
+}
+
+/* Timeline scrubber — replays the hiking history chronologically.
+   Hidden until the toggle above is pressed. */
+.timeline-bar {
+  position: absolute;
+  left: 16px;
+  right: 66px;
+  bottom: 16px;
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.4rem 0.9rem;
+  background: rgba(22, 26, 33, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+
+.timeline-bar.open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  pointer-events: auto;
+}
+
+.timeline-play {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #0f1115;
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timeline-track {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.timeline-slider {
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* Year ticks — sit just under the slider track so they never interfere
+   with dragging the thumb, filled in as the cutoff date reaches them. */
+.timeline-ticks {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 1px;
+  height: 8px;
+  pointer-events: none;
+}
+
+.timeline-tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 2px;
+  background: var(--border);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.timeline-tick:hover {
+  transform: translateX(-50%) scaleY(1.3);
+}
+
+.timeline-tick.reached {
+  background: var(--accent);
+}
+
+.timeline-label {
+  flex-shrink: 0;
+  min-width: 72px;
+  text-align: right;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timeline-bar {
+    transition: none;
+  }
+}
+
+/* Search */
+.search-input {
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 0.85rem;
+  width: 160px;
+}
+
+.search-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Filter section labels */
+.filter-label {
+  margin: 0.2rem 1rem 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
+/* Filter chips */
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.chip {
+  --chip-color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 0.28rem 0.7rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+/* Always tinted in its type's color, active or not — this is the legend:
+   the icon is what tells you "brown = peak," so it can't gray out just
+   because the filter happens to be off right now. */
+.chip-icon {
+  display: inline-flex;
+  color: var(--chip-color);
+}
+
+/* A soft tint, not a solid fill — four saturated pills side by side (one
+   per type) reads as loud/candy-like against the site's otherwise
+   restrained dark-plus-one-accent palette. */
+.chip.active {
+  background: color-mix(in srgb, var(--chip-color) 18%, transparent);
+  border-color: var(--chip-color);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.sort-toggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Range dropdown — a <details> popover instead of a permanently-visible
+   column, so the range checklist only takes space while open. */
+.range-dropdown {
+  position: relative;
+}
+
+.range-dropdown summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.range-dropdown summary::-webkit-details-marker {
+  display: none;
+}
+
+.range-dropdown summary::after {
+  content: "";
+  display: inline-block;
+  margin-left: 0.4rem;
+  border: solid currentColor;
+  border-width: 0 1.5px 1.5px 0;
+  padding: 2px;
+  transform: rotate(45deg);
+  opacity: 0.7;
+}
+
+.range-dropdown[open] summary::after {
+  transform: rotate(-135deg);
+}
+
+/* Range list — same soft-tint chip style as the Type filter next to it,
+   instead of a checkbox checklist that read as a different, heavier UI
+   pattern bolted onto the site. Wraps freely instead of a fixed 2-column
+   grid, with a height cap so 8+ ranges can't push the page too tall. */
+.range-list {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.7rem;
+  max-height: 220px;
+  width: 280px;
+  overflow-y: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.range-group-label {
+  flex-basis: 100%;
+  margin: 0.4rem 0 0.1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+/* Peak table (list view) */
+.peak-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.peak-table thead th {
+  position: sticky;
+  top: 44px;
+  height: 34px;
+  box-sizing: border-box;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+  padding: 0.7rem 1.2rem;
+  text-align: left;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  z-index: 1;
+}
+
+.peak-table td {
+  padding: 0.7rem 1.2rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.peak-row {
+  cursor: pointer;
+}
+
+.peak-row:hover {
+  background: var(--bg-card);
+}
+
+.peak-row.active {
+  background: var(--bg-card);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.peak-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 0.6rem;
+  flex-shrink: 0;
+}
+
+.visit-count {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.year-row td {
+  position: sticky;
+  top: 78px;
+  z-index: 1;
+  background: var(--bg-alt);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.4rem 1.2rem;
+}
+
+/* Leaflet overrides */
+.loc-marker {
+  background: transparent;
+  border: none;
+}
+
+.leaflet-popup-content-wrapper {
+  background: var(--bg-card);
+  color: var(--text);
+  border-radius: 8px;
+}
+
+.leaflet-popup-tip {
+  background: var(--bg-card);
+}
+
+.popup strong {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 0.15rem;
+}
+
+.popup-range {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.elevation-bar {
+  height: 5px;
+  background: var(--border);
+  border-radius: 999px;
+  margin: 0.5rem 0 0.3rem;
+  overflow: hidden;
+}
+
+.elevation-bar-fill {
+  height: 100%;
+}
+
+.popup-elevation {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.popup-status {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.popup-note {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+/* Trend charts — plain SVG bar charts, no charting library, matching the
+   dark theme and the marker colors already used on the map. */
+.charts-section {
+  padding: 2.2rem 1.5rem 3rem;
+  border-top: 1px solid var(--border);
+}
+
+.charts-section h2 {
+  text-align: center;
+  margin: 0 0 0.25rem;
+  font-size: 1.3rem;
+}
+
+.charts-section > p {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0 0 1.75rem;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.chart-card {
+  --chart-color: var(--accent);
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.15rem 1.15rem 0.85rem;
+  overflow: hidden;
+}
+
+.chart-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--chart-color);
+  opacity: 0.85;
+}
+
+.chart-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.chart-title-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--chart-color);
+}
+
+.chart-caption {
+  margin: 0 0 0.7rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  min-height: 1.1em;
+}
+
+.chart-caption strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+.chart-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.chart-axis-label {
+  fill: var(--text-muted);
+  font-size: 8px;
+}
+
+.chart-value-label {
+  fill: var(--text-muted);
+  font-size: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-bar {
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chart-bar:hover {
+  opacity: 0.75;
+}
+
+.chart-bar-vertical {
+  transform-box: fill-box;
+  transform-origin: bottom;
+}
+
+.chart-bar-horizontal {
+  transform-box: fill-box;
+  transform-origin: left;
+}
+
+.chart-bar-enter {
+  transform: scaleY(0);
+}
+
+.chart-bar-horizontal.chart-bar-enter {
+  transform: scaleX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-bar {
+    transition: opacity 0.15s ease;
+  }
+}
+
+.chart-tooltip {
+  position: fixed;
+  pointer-events: none;
+  z-index: 3000;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.75rem;
+  color: var(--text);
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity 0.12s ease;
+  white-space: nowrap;
+}
+
+.chart-tooltip.visible {
+  opacity: 1;
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .layout {
+    flex: none;
+    height: 55vh;
+  }
+
+  .filters-bar {
+    justify-content: center;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .range-list {
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(280px, calc(100vw - 2.4rem));
+  }
+
+  .peak-table td,
+  .peak-table thead th {
+    padding: 0.6rem 0.8rem;
+  }
+}
