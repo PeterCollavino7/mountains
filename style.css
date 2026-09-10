@@ -41,6 +41,31 @@ body {
   color: var(--accent);
 }
 
+/* Absolutely positioned so it doesn't add a line to a header that's kept to
+   one line on purpose (see .page-intro below) — sits at the same vertical
+   spot as .back-link, just pinned to the opposite corner. */
+.source-link {
+  position: absolute;
+  top: 0.85rem;
+  right: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.8rem;
+  transition: color 0.2s ease;
+}
+
+.source-link:hover {
+  color: var(--accent);
+}
+
+.source-link svg {
+  width: 14px;
+  height: 14px;
+}
+
 .page-header h1 {
   margin: 0 0 0.2rem;
   font-size: 1.6rem;
