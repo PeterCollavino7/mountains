@@ -164,6 +164,10 @@ function popupHtml(loc) {
       ${elevationBar}
       ${visitsHtml}
       ${loc.note ? `<p class="popup-note">${loc.note}</p>` : ""}
+      <button type="button" class="popup-link" data-slug="${slugByName[loc.name]}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+        <span>Copy link</span>
+      </button>
     </div>
   `;
 }
@@ -179,6 +183,25 @@ const mostRecent = locations.reduce(
   null
 );
 
+// Stable URL fragment per place (#monte-coglians), so a single place can be
+// linked to directly.
+function slugify(name) {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+const slugByName = {};
+const nameBySlug = {};
+locations.forEach((loc) => {
+  let slug = slugify(loc.name);
+  for (let n = 2; nameBySlug[slug]; n++) slug = `${slugify(loc.name)}-${n}`;
+  slugByName[loc.name] = slug;
+  nameBySlug[slug] = loc.name;
+});
+
 const markersByName = {};
 const bounds = [];
 
@@ -191,9 +214,14 @@ locations.forEach((loc) => {
     zIndexOffset: isLatest ? 1000 : 0
   })
     .addTo(map)
-    .bindPopup(popupHtml(loc), { maxWidth: 280 });
+    .bindPopup(popupHtml(loc), { maxWidth: 280, autoPanPadding: [16, 56] });
 
   marker.on("click", () => setActiveLocation(loc.name));
+  marker.on("popupclose", () => {
+    if (location.hash === `#${slugByName[loc.name]}`) {
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+  });
 
   markersByName[loc.name] = marker;
   if (LOCAL_RANGES.includes(loc.range)) bounds.push([loc.lat, loc.lng]);
@@ -205,6 +233,17 @@ function fitHome(animate = false) {
   if (bounds.length) map.fitBounds(bounds, { padding: [28, 28], animate });
 }
 fitHome();
+
+// Smaller markers when zoomed out, so the dense central Carnic cluster
+// overlaps less; full size once zoomed in where there is room.
+function updateZoomClass() {
+  const z = map.getZoom();
+  const el = map.getContainer();
+  el.classList.toggle("zoom-far", z <= 9);
+  el.classList.toggle("zoom-mid", z === 10);
+}
+map.on("zoomend", updateZoomClass);
+updateZoomClass();
 
 const RecenterControl = L.Control.extend({
   options: { position: "bottomright" },
@@ -285,12 +324,72 @@ Object.entries(TYPE_LABELS).forEach(([type, label]) => {
   typeChips.appendChild(chip);
 });
 
+// --- Period filter: set from the "Hikes by month" calendar. Matches any
+// visit in that year/month (return climbs included), since the calendar
+// counts every day out. ---
+let periodFilter = null; // { year: "2024", month: 8 | null }
+const periodChipEl = document.getElementById("period-chip");
+
+function periodPrefix() {
+  if (!periodFilter) return "";
+  return periodFilter.month ? `${periodFilter.year}-${String(periodFilter.month).padStart(2, "0")}` : periodFilter.year;
+}
+
+function periodLabel() {
+  if (!periodFilter) return "";
+  return periodFilter.month ? `${MONTHS[periodFilter.month - 1]} ${periodFilter.year}` : periodFilter.year;
+}
+
+function matchesPeriod(loc) {
+  const prefix = periodPrefix();
+  return !prefix || allDates(loc).some((d) => d.startsWith(prefix));
+}
+
+function setPeriodFilter(next, { reveal = false } = {}) {
+  periodFilter = next;
+  if (next && timelineBar.classList.contains("open")) closeTimeline();
+
+  const matching = locations.filter((l) => matchesPeriod(l));
+  if (next) {
+    periodChipEl.hidden = false;
+    periodChipEl.querySelector(".period-text").textContent = `${periodLabel()} · ${matching.length} place${matching.length === 1 ? "" : "s"}`;
+  } else {
+    periodChipEl.hidden = true;
+  }
+  document.querySelectorAll(".cal-cell.is-selected, .cal-year.is-selected").forEach((c) => c.classList.remove("is-selected"));
+  if (next) {
+    const sel = next.month
+      ? document.querySelector(`.cal-cell[data-ym="${periodPrefix()}"]`)
+      : document.querySelector(`.cal-year[data-year="${next.year}"]`);
+    if (sel) sel.classList.add("is-selected");
+  }
+
+  renderList();
+  applyFilter();
+
+  if (next && matching.length) {
+    if (reveal) {
+      const toolbar = document.querySelector(".toolbar");
+      window.scrollTo({ top: Math.max(0, toolbar.getBoundingClientRect().top + window.scrollY - 8), behavior: REDUCE_MOTION ? "auto" : "smooth" });
+    }
+    if (!listViewEl.hidden) return;
+    map.closePopup();
+    const pts = matching.map((l) => [l.lat, l.lng]);
+    map.fitBounds(pts, { padding: [60, 60], maxZoom: 12, animate: !REDUCE_MOTION });
+  } else if (!next) {
+    fitHome(!REDUCE_MOTION);
+  }
+}
+
+periodChipEl.addEventListener("click", () => setPeriodFilter(null));
+
 function applyFilter() {
   const cutoff = timelineCutoffDate();
   locations.forEach((loc) => {
     const marker = markersByName[loc.name];
     const visible =
       activeTypes.has(loc.type) &&
+      matchesPeriod(loc) &&
       (!cutoff || firstDate(loc) <= cutoff);
     if (visible && !map.hasLayer(marker)) {
       marker.addTo(map);
@@ -325,6 +424,9 @@ function setActiveLocation(name, { switchToMap = false } = {}) {
     if (prev) prev.classList.remove("is-active");
   }
   activeLocationName = name;
+  if (slugByName[name] && location.hash !== `#${slugByName[name]}`) {
+    history.replaceState(null, "", `#${slugByName[name]}`);
+  }
   if (switchToMap) setView("map");
   renderList();
   const marker = markersByName[name];
@@ -332,9 +434,16 @@ function setActiveLocation(name, { switchToMap = false } = {}) {
     if (!map.hasLayer(marker)) marker.addTo(map);
     const el = marker.getElement();
     if (el) el.classList.add("is-active");
-    if (REDUCE_MOTION) map.setView(marker.getLatLng(), 12);
-    else map.flyTo(marker.getLatLng(), 12, { duration: 0.8 });
-    marker.openPopup();
+    // Open the popup once the map has arrived: opened mid-flight, its auto-pan
+    // is computed against the old view and it can end up clipped at the top.
+    if (REDUCE_MOTION) {
+      map.setView(marker.getLatLng(), 12);
+      marker.openPopup();
+    } else {
+      map.closePopup();
+      map.once("moveend", () => marker.openPopup());
+      map.flyTo(marker.getLatLng(), 12, { duration: 0.8 });
+    }
   }
 }
 
@@ -344,7 +453,7 @@ function renderList() {
   tableBodyEl.innerHTML = "";
 
   const base = locations
-    .filter((l) => activeTypes.has(l.type))
+    .filter((l) => activeTypes.has(l.type) && matchesPeriod(l))
     .filter((l) => l.name.toLowerCase().includes(query));
 
   listCountEl.innerHTML = `<strong>${base.length}</strong> of ${locations.length} places`;
@@ -385,7 +494,9 @@ function renderList() {
     // in the year it happened, not just discoverable as a hover tooltip.
     const visits = [];
     base.forEach((loc) => {
-      allDates(loc).forEach((date, i) => visits.push({ loc, date, isRevisit: i > 0 }));
+      allDates(loc).forEach((date, i) => {
+        if (date.startsWith(periodPrefix())) visits.push({ loc, date, isRevisit: i > 0 });
+      });
     });
     visits.sort((a, b) => b.date.localeCompare(a.date));
 
@@ -556,15 +667,24 @@ updateTimelineTicks();
 const timelineBar = document.getElementById("timeline-bar");
 const timelineToggle = document.getElementById("timeline-toggle");
 
+function closeTimeline() {
+  timelineBar.classList.remove("open");
+  timelineToggle.classList.remove("active");
+  timelineToggle.setAttribute("aria-pressed", "false");
+  stopTimelinePlayback();
+  setTimelineIndex(timelineDates.length - 1);
+}
+
 timelineToggle.addEventListener("click", () => {
-  const open = !timelineBar.classList.contains("open");
-  timelineBar.classList.toggle("open", open);
-  timelineToggle.classList.toggle("active", open);
-  timelineToggle.setAttribute("aria-pressed", String(open));
-  if (!open) {
-    stopTimelinePlayback();
-    setTimelineIndex(timelineDates.length - 1);
+  if (timelineBar.classList.contains("open")) {
+    closeTimeline();
+    return;
   }
+  // The replay covers the whole log, so it can't run inside a month/year filter.
+  if (periodFilter) setPeriodFilter(null);
+  timelineBar.classList.add("open");
+  timelineToggle.classList.add("active");
+  timelineToggle.setAttribute("aria-pressed", "true");
 });
 
 /* =====================================================================
@@ -757,6 +877,15 @@ function calendarColor(v, max) {
     const yearLabel = document.createElement("span");
     yearLabel.className = "cal-year";
     yearLabel.textContent = yStr;
+    yearLabel.dataset.year = yStr;
+    if (daysByYear[yStr]) {
+      yearLabel.classList.add("is-link");
+      attachTooltip(
+        yearLabel,
+        () => `<strong>${yStr}</strong>${daysByYear[yStr].size} hikes<br><em class="tip-hint">Click to show on map</em>`,
+        () => setPeriodFilter({ year: yStr, month: null }, { reveal: true })
+      );
+    }
     el.appendChild(yearLabel);
 
     MONTHS.forEach((mName, m) => {
@@ -764,12 +893,17 @@ function calendarColor(v, max) {
       const v = daysByMonth[ym] ? daysByMonth[ym].size : 0;
       const cell = document.createElement("span");
       cell.className = "cal-cell";
+      cell.dataset.ym = ym;
       if (ym > todayYm || ym < firstYm) {
         cell.classList.add("future");
       } else if (v) {
         cell.classList.add("has-value");
         cell.style.background = calendarColor(v, maxMonth);
-        attachTooltip(cell, () => `<strong>${mName} ${yStr}</strong>${v} hike${v === 1 ? "" : "s"}`);
+        attachTooltip(
+          cell,
+          () => `<strong>${mName} ${yStr}</strong>${v} hike${v === 1 ? "" : "s"}<br><em class="tip-hint">Click to show on map</em>`,
+          () => setPeriodFilter({ year: yStr, month: m + 1 }, { reveal: true })
+        );
       } else {
         attachTooltip(cell, () => `<strong>${mName} ${yStr}</strong>No hikes`);
       }
@@ -1100,3 +1234,30 @@ const toTime = (iso) => new Date(`${iso}T12:00:00`).getTime();
     });
   }
 })();
+
+// --- Deep links: /mountains/#monte-coglians opens that place. ---
+function openFromHash() {
+  const name = nameBySlug[decodeURIComponent(location.hash.slice(1))];
+  if (name && name !== activeLocationName) setActiveLocation(name, { switchToMap: true });
+}
+window.addEventListener("hashchange", openFromHash);
+openFromHash();
+
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".popup-link");
+  if (!btn) return;
+  const url = `${location.origin}${location.pathname}#${btn.dataset.slug}`;
+  const label = btn.querySelector("span");
+  try {
+    await navigator.clipboard.writeText(url);
+    label.textContent = "Link copied";
+  } catch {
+    history.replaceState(null, "", `#${btn.dataset.slug}`);
+    label.textContent = "Link in address bar";
+  }
+  btn.classList.add("is-done");
+  setTimeout(() => {
+    label.textContent = "Copy link";
+    btn.classList.remove("is-done");
+  }, 1800);
+});

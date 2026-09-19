@@ -47,6 +47,11 @@
       </label>
 
       <div class="filter-scroller">
+        <button type="button" class="chip period-chip active" id="period-chip" hidden aria-label="Clear the period filter">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>
+          <span class="period-text"></span>
+          <span class="period-x" aria-hidden="true">&times;</span>
+        </button>
         <div class="filter-chips" id="type-chips"></div>
       </div>
     </div>
@@ -106,6 +111,7 @@
       <article class="chart-block">
         <h3 class="chart-kicker">Hikes by month</h3>
         <p class="chart-headline" id="chart-calendar-headline"></p>
+        <p class="chart-hint">Click a month or a year to see those places on the map.</p>
         <div class="calendar" id="chart-calendar" role="img" aria-label="Hikes per month, one row per year"></div>
         <div class="calendar-scale" id="calendar-scale" aria-hidden="true"></div>
       </article>

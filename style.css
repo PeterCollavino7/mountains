@@ -357,6 +357,32 @@ button {
   color: var(--text);
 }
 
+/* Active month/year filter, set from the calendar chart — the × clears it. */
+.period-chip[hidden] {
+  display: none;
+}
+
+.period-chip {
+  --chip-color: var(--accent);
+}
+
+.period-chip svg {
+  width: 13px;
+  height: 13px;
+  color: var(--accent);
+}
+
+.period-x {
+  margin-left: 0.1rem;
+  font-size: 0.95rem;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+.period-chip:hover .period-x {
+  color: var(--text);
+}
+
 /* Always tinted in its type's color, active or not — this is the legend:
    the icon is what tells you "brown = peak," so it can't gray out just
    because the filter happens to be off right now. */
@@ -672,6 +698,22 @@ button {
   transform: scale(1.3);
 }
 
+/* Zoomed out, markers shrink so the dense central cluster overlaps less. */
+.zoom-far .marker-glyph {
+  transform: scale(0.68);
+}
+
+.zoom-mid .marker-glyph {
+  transform: scale(0.84);
+}
+
+.zoom-far .loc-marker:hover .marker-glyph,
+.zoom-mid .loc-marker:hover .marker-glyph,
+.zoom-far .loc-marker.is-active .marker-glyph,
+.zoom-mid .loc-marker.is-active .marker-glyph {
+  transform: scale(1.15);
+}
+
 /* A slow ring on the most recent place, so "last outing" is findable. */
 .marker-latest::before {
   content: "";
@@ -802,6 +844,30 @@ button {
   font-size: 0.68rem;
   font-variant-numeric: tabular-nums;
   color: var(--text);
+}
+
+.popup-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.7rem;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.popup-link svg {
+  width: 12px;
+  height: 12px;
+}
+
+.popup-link:hover,
+.popup-link.is-done {
+  color: var(--accent);
 }
 
 .popup-note {
@@ -1185,6 +1251,28 @@ button {
 .cal-cell.future {
   background: transparent;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.cal-year.is-link {
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.cal-year.is-link:hover,
+.cal-year.is-selected {
+  color: var(--accent);
+}
+
+.cal-cell.is-selected {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--accent);
+  z-index: 1;
+}
+
+.chart-hint {
+  margin: -0.6rem 0 1rem;
+  font-size: 0.74rem;
+  color: var(--text-faint);
 }
 
 .cal-total {
