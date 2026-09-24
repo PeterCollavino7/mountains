@@ -1088,7 +1088,7 @@ const toTime = (iso) => new Date(`${iso}T12:00:00`).getTime();
 
   document.getElementById("chart-swarm-headline").innerHTML =
     `Median summit <strong>${formatMeters(median)} m</strong>; ` +
-    `<strong>${above2k}</strong> of ${sorted.length} peaks top 2,000 m.`;
+    `<strong>${above2k}</strong> of the ${sorted.length} peaks with a known height top 2,000 m.`;
 
   whenVisible(el, () => responsiveChart(el, (width, animate) => {
     const r = width < 500 ? 3.8 : 4.6;
