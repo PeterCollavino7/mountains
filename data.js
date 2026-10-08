@@ -1299,5 +1299,65 @@ const locations = [
     type: "rifugio",
     date: "2026-09-08",
     note: "Am Zollner, Dellach (Kärnten, Austria), by the Zollnersee just over the border above Rifugio Pietro Fabiani; visited the same day."
+  },
+  {
+    name: "Monte San Salvatore",
+    lat: 45.977112,
+    lng: 8.947302,
+    elevation: 912,
+    range: "Lugano Prealps",
+    type: "peak",
+    date: "2026-10-02",
+    note: "Above Lugano, on the Ceresio (Ticino, Switzerland)."
+  },
+  {
+    name: "Lago Ritom",
+    lat: 46.539920,
+    lng: 8.688818,
+    elevation: 1850,
+    range: "Lepontine Alps",
+    type: "lake",
+    date: "2026-10-03",
+    note: "Start of a loop of the lakes above Piora (Quinto, Ticino): Ritom, Cadagno, Tom, the Taneda tarns, up to the Bassa del Lago Scuro."
+  },
+  {
+    name: "Lago di Cadagno",
+    lat: 46.550083,
+    lng: 8.711517,
+    elevation: 1921,
+    range: "Lepontine Alps",
+    type: "lake",
+    date: "2026-10-03",
+    note: "Val Piora, on the lakes loop from Lago Ritom."
+  },
+  {
+    name: "Lago di Tom",
+    lat: 46.550180,
+    lng: 8.689362,
+    elevation: 2022,
+    range: "Lepontine Alps",
+    type: "lake",
+    date: "2026-10-03",
+    note: "Val Piora, on the lakes loop from Lago Ritom."
+  },
+  {
+    name: "Laghetti di Taneda",
+    lat: 46.558771,
+    lng: 8.692370,
+    elevation: null,
+    range: "Lepontine Alps",
+    type: "lake",
+    date: "2026-10-03",
+    note: "Small tarns below the Bassa del Lago Scuro, on the lakes loop from Lago Ritom."
+  },
+  {
+    name: "Bassa del Lago Scuro",
+    lat: 46.560880,
+    lng: 8.694378,
+    elevation: 2477,
+    range: "Lepontine Alps",
+    type: "passo",
+    date: "2026-10-03",
+    note: "Saddle above the Laghetti di Taneda and Lago Scuro; high point of the lakes loop from Lago Ritom."
   }
 ];

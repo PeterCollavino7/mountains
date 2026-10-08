@@ -880,6 +880,72 @@ button {
   color: var(--accent);
 }
 
+/* "Same day": the other stops of that hike, one tap away each. */
+.popup-day {
+  margin-top: 0.6rem;
+}
+
+.popup-day-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.popup-day-stops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+}
+
+.day-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.14rem 0.5rem 0.14rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.68rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.day-stop .type-icon svg {
+  width: 9px;
+  height: 9px;
+  display: block;
+}
+
+.day-stop:hover {
+  border-color: var(--accent);
+  background: rgba(91, 140, 255, 0.1);
+}
+
+/* The day's route on the map: a soft glow under a dashed accent line. */
+.day-route,
+.day-route-glow {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.day-route {
+  stroke: var(--accent);
+  stroke-width: 2.5px;
+  stroke-dasharray: 2 7;
+  opacity: 0.95;
+}
+
+.day-route-glow {
+  stroke: var(--accent);
+  stroke-width: 9px;
+  opacity: 0.16;
+}
+
 .popup-note {
   margin: 0.5rem 0 0;
   font-size: 0.78rem;

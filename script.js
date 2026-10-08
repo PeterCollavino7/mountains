@@ -135,6 +135,18 @@ const minElevation = Math.min(...peakElevations);
 const maxElevation = Math.max(...peakElevations);
 const maxElevationAll = Math.max(...locations.filter((l) => l.elevation != null).map((l) => l.elevation));
 
+// Places sharing a day out with `loc`, in the order the log lists them (which
+// is the order they were walked). For a place visited more than once, the
+// latest day that had other stops wins. Null when it was a one-stop day.
+function sameDayTrip(loc) {
+  const dates = allDates(loc).slice().reverse();
+  for (const date of dates) {
+    const stops = locations.filter((l) => allDates(l).includes(date));
+    if (stops.length > 1) return { date, stops };
+  }
+  return null;
+}
+
 function popupHtml(loc) {
   const elevation =
     loc.elevation != null
@@ -153,7 +165,18 @@ function popupHtml(loc) {
   const verb = loc.type === "peak" || loc.type === "passo" ? "Climbed" : "Visited";
   const visitsHtml = visits.length
     ? `<div class="popup-visits"><strong>${verb} ${visits.length === 1 ? "once" : `${visits.length} times`}</strong>
-        <div class="visit-dates">${visits.map((d) => `<span class="visit-date">${formatDate(d)}</span>`).join("")}</div></div>`
+        <div class="visit-dates">${visits.map((d) => `<span class="visit-date">${formatLongDate(d)}</span>`).join("")}</div></div>`
+    : "";
+
+  // The rest of that day out: a lakes loop or a ridge is one hike, and the
+  // log should say so instead of leaving each stop an island.
+  const day = sameDayTrip(loc);
+  const dayHtml = day
+    ? `<div class="popup-day"><span class="popup-day-label">Same day${visits.length > 1 ? ` &middot; ${formatLongDate(day.date)}` : ""}</span>
+        <div class="popup-day-stops">${day.stops
+          .filter((s) => s !== loc)
+          .map((s) => `<button type="button" class="day-stop" data-goto="${slugByName[s.name]}">${coloredTypeIcon(s.type)}${s.name}</button>`)
+          .join("")}</div></div>`
     : "";
 
   return `
@@ -163,6 +186,7 @@ function popupHtml(loc) {
       ${elevation}
       ${elevationBar}
       ${visitsHtml}
+      ${dayHtml}
       ${loc.note ? `<p class="popup-note">${loc.note}</p>` : ""}
       <button type="button" class="popup-link" data-slug="${slugByName[loc.name]}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
@@ -205,6 +229,24 @@ locations.forEach((loc) => {
 const markersByName = {};
 const bounds = [];
 
+// The day's route: a dashed line through that day's stops in log order, drawn
+// while one of them is open. Straight segments, not the trail itself -- the
+// log has no tracks -- so it is drawn light and dashed to read as a sketch.
+let dayRoute = null;
+function clearDayRoute() {
+  if (dayRoute) map.removeLayer(dayRoute);
+  dayRoute = null;
+}
+function drawDayRoute(loc) {
+  clearDayRoute();
+  const day = sameDayTrip(loc);
+  if (!day) return;
+  dayRoute = L.layerGroup([
+    L.polyline(day.stops.map((s) => [s.lat, s.lng]), { className: "day-route-glow", interactive: false }),
+    L.polyline(day.stops.map((s) => [s.lat, s.lng]), { className: "day-route", interactive: false })
+  ]).addTo(map);
+}
+
 locations.forEach((loc) => {
   const isLatest = mostRecent && loc.name === mostRecent.name;
   const marker = L.marker([loc.lat, loc.lng], {
@@ -217,7 +259,9 @@ locations.forEach((loc) => {
     .bindPopup(popupHtml(loc), { maxWidth: 280, autoPanPadding: [16, 56] });
 
   marker.on("click", () => setActiveLocation(loc.name));
+  marker.on("popupopen", () => drawDayRoute(loc));
   marker.on("popupclose", () => {
+    clearDayRoute();
     if (location.hash === `#${slugByName[loc.name]}`) {
       history.replaceState(null, "", location.pathname + location.search);
     }
@@ -1088,7 +1132,7 @@ const toTime = (iso) => new Date(`${iso}T12:00:00`).getTime();
 
   document.getElementById("chart-swarm-headline").innerHTML =
     `Median summit <strong>${formatMeters(median)} m</strong>; ` +
-    `<strong>${above2k}</strong> of the ${sorted.length} peaks with a known height top 2,000 m.`;
+    `<strong>${above2k}</strong> of the ${sorted.length} peaks with a known height top 2,000&nbsp;m.`;
 
   whenVisible(el, () => responsiveChart(el, (width, animate) => {
     const r = width < 500 ? 3.8 : 4.6;
@@ -1242,6 +1286,12 @@ function openFromHash() {
 }
 window.addEventListener("hashchange", openFromHash);
 openFromHash();
+
+// A stop in the popup's "Same day" row opens that place.
+document.addEventListener("click", (e) => {
+  const stop = e.target.closest(".day-stop");
+  if (stop && nameBySlug[stop.dataset.goto]) setActiveLocation(nameBySlug[stop.dataset.goto]);
+});
 
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest(".popup-link");
